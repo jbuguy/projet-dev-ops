@@ -1,0 +1,24 @@
+services:
+  backend:
+    build: ./backend
+    container_name: chatbot-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app  
+      - faiss_data:/app/data 
+      - ./gcp-credentials.json:/app/gcp-credentials.json:ro
+    environment:
+      - ENV=development
+      - GOOGLE_APPLICATION_CREDNTIALS =/app/gcp-credentials.json
+  frontend:
+    build: ./frontend
+    container_name: chatbot-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000 
+volumes:
+  faiss_data: 

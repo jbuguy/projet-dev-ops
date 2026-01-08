@@ -6,7 +6,8 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app  
-      - faiss_data:/app/data 
+      - faiss_data:/app/data
+      - ./backend/data/raw:/app/data/raw 
       - ./gcp-credentials.json:/app/gcp-credentials.json:ro
     environment:
       - ENV=development

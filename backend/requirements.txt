@@ -10,4 +10,5 @@ langchain
 langchain-community
 pypdf
 langchain-text-splitters
+dvc[gdrive]
 pytest-mock

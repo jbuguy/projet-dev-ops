@@ -1,10 +1,11 @@
 import os
+import glob
 import pickle
 import numpy as np
-from langchain_community.document_loaders import DirectoryLoader, PyPDFLoader
+import faiss
+from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
-import faiss
 from rank_bm25 import BM25Okapi
 
 DATA_PATH = os.getenv("DATA_PATH", "/app/data")
@@ -13,59 +14,88 @@ ARTIFACTS_DIR = os.path.join(DATA_PATH, "artifacts")
 
 os.makedirs(ARTIFACTS_DIR, exist_ok=True)
 
+def load_documents(directory):
+    """
+    Scans a directory for PDF and TXT files and loads them using LangChain loaders.
+    """
+    documents = []
+    
+    pdf_files = glob.glob(os.path.join(directory, "*.pdf"))
+    txt_files = glob.glob(os.path.join(directory, "*.txt"))
+    all_files = pdf_files + txt_files
+    
+    if not all_files:
+        print(f"[WARN] No files found in {directory}. Did DVC pull work?")
+        return []
+
+    print(f"[INFO] Found {len(all_files)} files. Loading...")
+
+    for filepath in all_files:
+        try:
+            if filepath.endswith(".pdf"):
+                loader = PyPDFLoader(filepath)
+            elif filepath.endswith(".txt"):
+                loader = TextLoader(filepath, encoding="utf-8")
+            
+            docs = loader.load()
+            documents.extend(docs)
+            print(f"   [OK] Loaded: {os.path.basename(filepath)}")
+        except Exception as e:
+            print(f"   [ERR] Error loading {os.path.basename(filepath)}: {e}")
+
+    return documents
+
 def main():
     print(f"--- Starting Ingestion Pipeline ---")
     print(f"Reading from: {RAW_DATA_DIR}")
-    print(f"Saving to:   {ARTIFACTS_DIR}")
+    print(f"Saving to:    {ARTIFACTS_DIR}")
 
-    if not os.path.exists(RAW_DATA_DIR) or not os.listdir(RAW_DATA_DIR):
-        print("ERROR: No files found in raw directory. Did DVC pull work?")
+    raw_docs = load_documents(RAW_DATA_DIR)
+    if not raw_docs:
+        print("[ERR] Stopping pipeline: No documents loaded.")
         return
 
-    loader = DirectoryLoader(
-        RAW_DATA_DIR, 
-        glob="./*.pdf", 
-        loader_cls=PyPDFLoader
-    )
-    documents = loader.load()
-    print(f"Loaded {len(documents)} pages.")
+    print(f"[INFO] Total raw pages/documents loaded: {len(raw_docs)}")
 
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=500,  
+        chunk_size=500,
         chunk_overlap=50,
         length_function=len,
         separators=["\n\n", "\n", " ", ""]
     )
     
-    split_docs = text_splitter.split_documents(documents)
-    print(f"Generated {len(split_docs)} chunks.")
+    split_docs = text_splitter.split_documents(raw_docs)
+    print(f"[INFO] Generated {len(split_docs)} chunks.")
 
     chunks = []
     for doc in split_docs:
+        source_name = os.path.basename(doc.metadata.get("source", "unknown"))
+        page_num = doc.metadata.get("page", 0) + 1
+        
         chunks.append({
             "text": doc.page_content,
             "metadata": {
-                "source": os.path.basename(doc.metadata.get("source", "unknown")),
-                "page": doc.metadata.get("page", 0) + 1
+                "source": source_name,
+                "page": page_num
             }
         })
 
-    print("Loading Embedding Model (all-MiniLM-L6-v2)...")
+    print("[INFO] Loading Embedding Model (all-MiniLM-L6-v2)...")
     model = SentenceTransformer('all-MiniLM-L6-v2')
     
     text_content = [c["text"] for c in chunks]
-    embeddings = model.encode(text_content)
-    print(f"Embeddings shape: {embeddings.shape}")
-
-    print("Building FAISS Index...")
+    embeddings = model.encode(text_content, show_progress_bar=True)
+    
+    print("[INFO] Building FAISS Index...")
     dimension = embeddings.shape[1]
     index = faiss.IndexFlatL2(dimension)
     index.add(np.array(embeddings).astype('float32'))
 
-    print("Building BM25 Index...")
+    print("[INFO] Building BM25 Index...")
     tokenized_corpus = [doc.split(" ") for doc in text_content]
     bm25 = BM25Okapi(tokenized_corpus)
-    print("Saving artifacts...")
+
+    print("[INFO] Saving artifacts to disk...")
     
     faiss.write_index(index, os.path.join(ARTIFACTS_DIR, "vector_index.faiss"))
     
@@ -76,6 +106,8 @@ def main():
         pickle.dump(bm25, f)
 
     print("--- Pipeline Finished Successfully ---")
+    print(f"Files created in {ARTIFACTS_DIR}:")
+    print(os.listdir(ARTIFACTS_DIR))
 
 if __name__ == "__main__":
     main()

@@ -6,7 +6,7 @@ export default function UniversityChatbot() {
         {
             id: 1,
             type: "bot",
-            text: "مرحبا! Hello! 👋 I'm here to help you with questions about fees, programs, admissions, and more. How can I assist you today?",
+            text: "Hello! I'm here to help you with questions about fees, programs, admissions, and more. How can I assist you today?",
             sources: [],
         },
     ]);

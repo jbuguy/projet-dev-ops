@@ -4,7 +4,7 @@ import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
 
-# Paths matching your Docker Volume
+# DevOps: Load paths from Environment or default to Docker volume
 DATA_PATH = os.getenv("DATA_PATH", "/app/data")
 ARTIFACTS_DIR = os.path.join(DATA_PATH, "artifacts")
 
@@ -17,16 +17,17 @@ class RAGService:
         self.is_ready = False
 
     def load_artifacts(self):
-        """Loads the ML models and indices into memory."""
-        print("Loading RAG Artifacts...")
+        """Loads the FAISS index, Metadata, and BM25 from disk."""
+        print(f"[INFO] Loading RAG Artifacts from {ARTIFACTS_DIR}...")
         try:
             # 1. Load Embedding Model
             self.model = SentenceTransformer('all-MiniLM-L6-v2')
             
             # 2. Load FAISS Index
-            self.index = faiss.read_index(os.path.join(ARTIFACTS_DIR, "vector_index.faiss"))
+            index_path = os.path.join(ARTIFACTS_DIR, "vector_index.faiss")
+            self.index = faiss.read_index(index_path)
             
-            # 3. Load Metadata (Chunks)
+            # 3. Load Metadata (Text Chunks)
             with open(os.path.join(ARTIFACTS_DIR, "metadata.pkl"), "rb") as f:
                 self.chunks = pickle.load(f)
 
@@ -35,60 +36,67 @@ class RAGService:
                 self.bm25 = pickle.load(f)
                 
             self.is_ready = True
-            print("✅ RAG Service Loaded Successfully.")
+            print("[SUCCESS] RAG Service Loaded and Ready.")
         except Exception as e:
-            print(f"⚠️ Warning: Could not load artifacts: {e}")
-            print("Server will start, but RAG features will fail until data is ingested.")
+            print(f"[ERROR] Failed to load artifacts: {e}")
+            print("Did you run ingest.py? The API will start but cannot answer questions.")
             self.is_ready = False
 
     def search(self, query: str, k: int = 3):
         """
-        Performs Hybrid Search:
-        1. Dense Retrieval (FAISS)
-        2. Sparse Retrieval (BM25) - Optional, simplified here to just FAISS for MVP stability
+        Retrieves top K chunks using Vector Search (Dense).
+        (Future: Hybrid search can be enabled here using self.bm25)
         """
         if not self.is_ready:
             return []
 
-        # 1. Vector Search (Semantic)
+        # Convert query to vector
         query_vector = self.model.encode([query])
+        
         # Search FAISS
+        # D, I = distances, indices
         distances, indices = self.index.search(np.array(query_vector).astype('float32'), k)
         
         results = []
         for idx in indices[0]:
-            if idx < len(self.chunks):
+            if idx != -1 and idx < len(self.chunks):
                 results.append(self.chunks[idx])
         
         return results
 
     def generate_answer(self, query: str, retrieved_chunks: list):
         """
-        Synthesizes an answer based on retrieved docs.
-        For CPU optimization, we use a structured 'Extractive' approach 
-        instead of a heavy Seq2Seq model for now.
+        Synthesizes a readable answer from the retrieved chunks.
         """
         if not retrieved_chunks:
-            return "I couldn't find any information relevant to your query in the documents."
+            return {
+                "answer": "I'm sorry, I couldn't find any information about that in the official documents.",
+                "sources": []
+            }
 
-        # Construct a digestible response
-        answer = "Based on the official documents, here is what I found:\n\n"
+        # 1. Extract Sources
+        sources_list = []
+        context_text = ""
         
-        sources = set()
-        for i, chunk in enumerate(retrieved_chunks):
-            # Clean up newlines for display
-            text = chunk['text'].replace("\n", " ").strip()
+        for chunk in retrieved_chunks:
             source = chunk['metadata']['source']
             page = chunk['metadata']['page']
+            text = chunk['text'].replace("\n", " ").strip()
             
-            answer += f"• {text}...\n"
-            sources.add(f"{source} (Page {page})")
+            context_text += f"- {text}\n"
+            sources_list.append(f"{source} (Page {page})")
+
+        # 2. Simple Synthesis (Template based for CPU speed)
+        # If you add an LLM later, this is where you call OpenAI/Llama
+        answer = (
+            f"Based on your query '{query}', here is the relevant information:\n\n"
+            f"{context_text}\n"
+        )
 
         return {
             "answer": answer,
-            "sources": list(sources),
-            "raw_chunks": retrieved_chunks
+            "sources": list(set(sources_list)) # Remove duplicates
         }
 
-# Singleton instance
+# Singleton Instance
 rag_service = RAGService()

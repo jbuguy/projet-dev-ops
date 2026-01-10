@@ -4,7 +4,7 @@ import pickle
 import numpy as np
 import faiss
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
 from rank_bm25 import BM25Okapi
 

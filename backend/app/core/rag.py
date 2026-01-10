@@ -50,11 +50,8 @@ class RAGService:
         if not self.is_ready:
             return []
 
-        # Convert query to vector
         query_vector = self.model.encode([query])
         
-        # Search FAISS
-        # D, I = distances, indices
         distances, indices = self.index.search(np.array(query_vector).astype('float32'), k)
         
         results = []

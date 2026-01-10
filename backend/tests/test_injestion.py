@@ -42,8 +42,7 @@ def test_full_ingestion_flow(mock_faiss, mock_model_class, tmp_path, monkeypatch
     
     data_dir.mkdir()
     raw_dir.mkdir()
-    # (No need to make artifacts dir, your script should do it)
-
+    artifacts_dir.mkdir()
     # Point the environment variable DATA_PATH to our temp dir
     monkeypatch.setenv("DATA_PATH", str(data_dir))
 

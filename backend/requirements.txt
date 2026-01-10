@@ -6,7 +6,7 @@ rank_bm25
 pytest
 dvc
 dvc[gs]
-# Add these for your script:
 langchain
 langchain-community
 pypdf
+langchain-text-splitters

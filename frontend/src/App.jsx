@@ -6,7 +6,7 @@ export default function UniversityChatbot() {
         {
             id: 1,
             type: "bot",
-            text: "مرحبا! Hello! 👋 I'm here to help you with questions about fees, programs, admissions, and more. How can I assist you today?",
+            text: "Hello! I'm here to help you with questions about fees, programs, admissions, and more. How can I assist you today?",
             sources: [],
         },
     ]);
@@ -78,7 +78,7 @@ export default function UniversityChatbot() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className="min-h-screen min-w-screen bg-gray-50 flex flex-col">
             {/* Header */}
             <header className="bg-white border-b border-gray-200">
                 <div className="w-full px-6 py-4 flex items-center gap-4">

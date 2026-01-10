@@ -1,17 +1,21 @@
 services:
   backend:
-    build: ./backend
+    build: 
+      context: .
+      dockerfile: ./backend/Dockerfile
     container_name: chatbot-backend
     ports:
       - "8000:8000"
     volumes:
       - ./backend:/app  
+      - ./.dvc:/app/.dvc
+      - ./.git:/app/.git
       - faiss_data:/app/data
       - ./backend/data/raw:/app/data/raw 
       - ./gcp-credentials.json:/app/gcp-credentials.json:ro
     environment:
       - ENV=development
-      - GOOGLE_APPLICATION_CREDNTIALS =/app/gcp-credentials.json
+      - GOOGLE_APPLICATION_CREDNTIALS=/app/gcp-credentials.json
   frontend:
     build: ./frontend
     container_name: chatbot-frontend

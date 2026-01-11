@@ -71,7 +71,7 @@ jobs:
           echo "$GDRIVE_CREDENTIALS_DATA" > .dvc/key.json
       - name: Configure DVC Remote
         run: |
-          dvc remote modify storage gdrive_service_account_json_file_path .dvc/key.json
+          dvc remote modify myremote gdrive_service_account_json_file_path .dvc/key.json
       - name: Pull Data from GDrive
         env:
           GDRIVE_CREDENTIALS_DATA: ${{ secrets.GDRIVE_CREDENTIALS_DATA }}  

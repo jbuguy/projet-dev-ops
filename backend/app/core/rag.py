@@ -21,7 +21,7 @@ class RAGService:
         print(f"[INFO] Loading RAG Artifacts from {ARTIFACTS_DIR}...")
         try:
             # 1. Load Embedding Model
-            self.model = SentenceTransformer('all-MiniLM-L6-v2')
+            self.model = SentenceTransformer('all-mpnet-base-v2')
             
             # 2. Load FAISS Index
             index_path = os.path.join(ARTIFACTS_DIR, "vector_index.faiss")

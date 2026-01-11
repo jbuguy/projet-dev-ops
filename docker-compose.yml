@@ -6,12 +6,13 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app  
-      - faiss_data:/app/data
+      # - faiss_data:/app/data
       - ./backend/data/raw:/app/data/raw 
       - ./gcp-credentials.json:/app/gcp-credentials.json:ro
     environment:
+      - MLFLOW_TRACKING_URI=http://mlflow_server:5000
       - ENV=development
-      - GOOGLE_APPLICATION_CREDNTIALS =/app/gcp-credentials.json
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-credentials.json
   frontend:
     build: ./frontend
     container_name: chatbot-frontend
@@ -21,5 +22,12 @@ services:
       - backend
     environment:
       - REACT_APP_API_URL=http://localhost:8000 
-volumes:
-  faiss_data: 
+  mlflow_server:
+    image: ghcr.io/mlflow/mlflow:v2.10.0
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlruns:/mlruns  
+    command: mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root /mlruns --host 0.0.0.0
+# volumes:
+#  faiss_data: 

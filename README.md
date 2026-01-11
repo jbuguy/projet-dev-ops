@@ -5,7 +5,7 @@ It uses DVC for data and artifact versioning, Docker for reproducible environmen
 
 The application can be run in **development mode** (local embedding generation) or **production mode** (prebuilt Docker images with embeddings).
 
----
+-----------
 
 ## Technologies
 

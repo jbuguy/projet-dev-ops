@@ -7,5 +7,5 @@ __pycache__/
 
 data
 models
-key.json
+
 gcp-credentials.json

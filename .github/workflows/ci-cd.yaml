@@ -64,13 +64,18 @@ jobs:
 
       - name: Setup DVC & Pull Data
         uses: iterative/setup-dvc@v1
-      
-      - name: Pull Data from GDrive
+      - name: Create DVC Key File
         env:
           GDRIVE_CREDENTIALS_DATA: ${{ secrets.GDRIVE_CREDENTIALS_DATA }}
         run: |
-          dvc pull
-          # Now 'backend/data' is full of PDFs and Artifacts
+          echo "$GDRIVE_CREDENTIALS_DATA" > .dvc/key.json
+      - name: Configure DVC Remote
+        run: |
+          dvc remote modify storage gdrive_service_account_json_file_path .dvc/key.json
+      - name: Pull Data from GDrive
+        env:
+          GDRIVE_CREDENTIALS_DATA: ${{ secrets.GDRIVE_CREDENTIALS_DATA }}  
+        run: dvc pull
 
       - name: Build and Push Backend
         uses: docker/build-push-action@v4

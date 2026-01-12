@@ -53,6 +53,66 @@ class FeedbackRequest(BaseModel):
     request_id: str
     score: int  # 1-5 scale
     comment: Optional[str] = None
+@app.on_event("startup")
+async def startup_event():
+    rag_service.load_artifacts()
+
+# --- Routes ---
+
+@app.post("/chat", response_model=QueryResponse)
+def chat(request: QueryRequest):
+    if not rag_service.is_ready:
+        raise HTTPException(status_code=503, detail="System not ready.")
+
+    # Generate a unique ID for this specific interaction
+    request_id = str(uuid.uuid4())
+
+    with mlflow.start_run(run_name="chat_request", nested=True) as run:
+        # Log the request_id as a tag so we can find it later for feedback
+        mlflow.set_tag("request_id", request_id)
+        mlflow.log_param("session_id", request.session_id)
+        
+        start_time = time.time()
+        
+        # 1. Retrieve & Generate
+        # (Assuming you updated rag.py for history as discussed previously)
+        history = [] # Retrieve from your history storage
+        relevant_chunks = rag_service.search(request.query, history)
+        response_data = rag_service.generate_answer(request.query, relevant_chunks)
+
+        duration = time.time() - start_time
+        
+        # --- 7.1 Metric: Latency ---
+        mlflow.log_metric("latency_seconds", duration)
+        
+        # Log inputs/outputs for manual review later
+        mlflow.log_text(request.query, "question.txt")
+        mlflow.log_text(response_data["answer"], "answer.txt")
+
+        return {
+            "answer": response_data["answer"],
+            "sources": response_data["sources"],
+            "session_id": request.session_id,
+            "request_id": request_id
+        }
+
+@app.post("/feedback")
+def submit_feedback(feedback: FeedbackRequest):
+    """
+    7.2 User Testing: Collect satisfaction scores.
+    """
+    # In MLflow, you can't easily 're-open' a run to add metrics later without the run_id.
+    # For simplicity in this assignment, we log feedback as a NEW run linked by tag.
+    with mlflow.start_run(run_name="user_feedback"):
+        mlflow.set_tag("related_request_id", feedback.request_id)
+        
+        # --- 7.2 Metric: Satisfaction Score ---
+        mlflow.log_metric("user_satisfaction_score", feedback.score)
+        
+        if feedback.comment:
+            mlflow.log_text(feedback.comment, "user_comment.txt")
+            
+    return {"status": "feedback_received"}
 
 # --- 5. Routes ---
 
@@ -76,27 +136,3 @@ def clear_history(session_id: str):
         del chat_histories[session_id]
     return {"message": f"History cleared for {session_id}"}
 
-@app.post("/chat", response_model=QueryResponse)
-def chat(request: QueryRequest):
-    """
-    Main Chat Endpoint.
-    Handles: Context retrieval -> Vector Search -> LLM Generation -> MLflow Logging
-    """
-    if not rag_service.is_ready:
-        raise HTTPException(
-            status_code=503, 
-            detail="System is still initializing or no data found. Please wait or check logs."
-        )
-
-    # Generate a unique ID for this specific interaction
-    request_id = str(uuid.uuid4())
-
-    # Start MLflow Run
-    with mlflow.start_run(run_name="chat_request", nested=True):
-        mlflow.set_tag("request_id", request_id)
-        mlflow.log_param("session_id", request.session_id)
-        
-        start_time = time.time()
-        
-        # 1. Retrieve History
-        history = chat_

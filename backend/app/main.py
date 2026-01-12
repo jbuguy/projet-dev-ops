@@ -1,14 +1,26 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from contextlib import asynccontextmanager
 from app.core.rag import rag_service
 
-app = FastAPI(title="DevOps Chatbot API")
+# --- 1. Lifespan Manager (The Modern Startup Way) ---
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Load the brain
+    print("[INFO] Application starting up...")
+    rag_service.load_artifacts()
+    yield
+    # Shutdown: Clean up resources (if needed)
+    print("[INFO] Application shutting down...")
+
+# --- 2. Create App ---
+app = FastAPI(title="DevOps Chatbot API", lifespan=lifespan)
 
 # Allow Frontend to talk to Backend (CORS)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, change to specific frontend URL
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -22,12 +34,6 @@ class QueryResponse(BaseModel):
     answer: str
     sources: list[str]
 
-# --- Startup Event ---
-@app.on_event("startup")
-async def startup_event():
-    # Load the Brain into memory when server starts
-    rag_service.load_artifacts()
-
 # --- Routes ---
 @app.get("/")
 def root():
@@ -36,8 +42,9 @@ def root():
 @app.get("/health")
 def health_check():
     """Used by Docker/Kubernetes to check status"""
+    status = "healthy" if rag_service.is_ready else "initializing"
     return {
-        "status": "healthy", 
+        "status": status, 
         "rag_ready": rag_service.is_ready
     }
 

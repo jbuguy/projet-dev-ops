@@ -2,17 +2,21 @@ services:
   backend:
     build: ./backend
     container_name: chatbot-backend
+    env_file:
+      - ./backend/.env
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/app  
-      # - faiss_data:/app/data
-      - ./backend/data/raw:/app/data/raw 
+      - ./backend:/app
+      # Unified Data Volume: Maps local data folder to container
+      - ./backend/data:/app/data
       - ./gcp-credentials.json:/app/gcp-credentials.json:ro
     environment:
       - MLFLOW_TRACKING_URI=http://mlflow_server:5000
       - ENV=development
       - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-credentials.json
+      - DATA_PATH=/app/data
+
   frontend:
     build: ./frontend
     container_name: chatbot-frontend
@@ -21,13 +25,15 @@ services:
     depends_on:
       - backend
     environment:
-      - REACT_APP_API_URL=http://localhost:8000 
+      # Correct Env Var for Vite (from main branch)
+      - VITE_API_URL=http://localhost:8000
+      - CHOKIDAR_USEPOLLING=true
+
   mlflow_server:
     image: ghcr.io/mlflow/mlflow:v2.10.0
+    container_name: mlflow_server
     ports:
       - "5000:5000"
     volumes:
-      - ./mlruns:/mlruns  
+      - ./mlruns:/mlruns
     command: mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root /mlruns --host 0.0.0.0
-# volumes:
-#  faiss_data: 

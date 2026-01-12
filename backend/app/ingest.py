@@ -9,12 +9,10 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
 from rank_bm25 import BM25Okapi
 
-# --- DevOps Configuration ---
 DATA_PATH = os.getenv("DATA_PATH", "/app/data")
 RAW_DATA_DIR = os.path.join(DATA_PATH, "raw")
 ARTIFACTS_DIR = os.path.join(DATA_PATH, "artifacts")
 
-# Ensure output directory exists
 os.makedirs(ARTIFACTS_DIR, exist_ok=True)
 
 
@@ -33,7 +31,6 @@ def load_existing_artifacts():
         
         index = faiss.read_index(faiss_path)
         
-        # Create a set of already processed filenames
         processed_files = set(c['metadata']['source'] for c in existing_chunks)
         
         return existing_chunks, index, processed_files
@@ -56,25 +53,20 @@ def load_new_documents(directory, processed_files):
     
     for filepath in all_files:
         filename = os.path.basename(filepath)
-        
-        # SKIP if already processed
         if filename in processed_files:
             print(f"   [SKIP] Already processed: {filename}")
             continue
-
         try:
             if filepath.endswith(".pdf"):
                 loader = PyPDFLoader(filepath)
             elif filepath.endswith(".txt"):
                 loader = TextLoader(filepath, encoding="utf-8")
-            
             docs = loader.load()
             documents.extend(docs)
             new_files_count += 1
             print(f"   [NEW] Loaded: {filename}")
         except Exception as e:
             print(f"   [ERR] Error loading {filename}: {e}")
-
     return documents, new_files_count
 
 
@@ -84,14 +76,18 @@ def main():
     # MLflow Setup
     tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
     mlflow.set_tracking_uri(tracking_uri)
-
-    mlflow.set_experiment("DevOps_RAG_...")
+    
+    # Ensure this experiment name matches what you use elsewhere
+    mlflow.set_experiment("DevOps_RAG_Context")
     
     with mlflow.start_run():
         # 1. Configuration
         CHUNK_SIZE = 500
         CHUNK_OVERLAP = 50
-        EMBEDDING_MODEL = 'all-mpnet-base-v2'
+        
+        # CRITICAL: This MUST match the model used in rag_service.py
+        # We selected the multilingual model for better performance.
+        EMBEDDING_MODEL = 'paraphrase-multilingual-mpnet-base-v2'
         
         mlflow.log_param("chunk_size", CHUNK_SIZE)
         mlflow.log_param("chunk_overlap", CHUNK_OVERLAP)
@@ -148,6 +144,7 @@ def main():
             print("[INFO] Creating new FAISS index...")
             index = faiss.IndexFlatL2(dimension)
         
+        print(f"[INFO] Adding {len(new_embeddings)} vectors to FAISS...")
         index.add(np.array(new_embeddings).astype('float32'))
 
         # Merge Metadata

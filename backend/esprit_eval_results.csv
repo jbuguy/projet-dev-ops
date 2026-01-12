@@ -1,0 +1,29 @@
+query,latency,source_hit,exactness,generated_answer
+What modules are taught in the first semester of the 1st year?,0.09767937660217285,False,0.0,"Based on your query 'What modules are taught in the first semester of the 1st year?', here is the relevant information:
+
+- modules la composant avec leurs crédits, les prérequis et une synthèse des acquis d'apprentissage. Les modules  sont décrits quant à eux par des fiches modules (syllabus) contenant plus de détails sur la formation et l’évaluation :  prérequis et acquis d'apprentissage spécifiques et modes d’évaluation détaillés.  Article 7 : Régime des examens   7-1 Le système ECTS  Le système ECTS est un système de transfert et d’accumulation de crédits centré sur l’alternant. Il repose sur la
+- obligatoirement repasser tous les modules dont la moyenne est inférieure à 10/20 de l'UE non validée. Tous  les résultats obtenus l’année précédente dans ces modules sont annulés et l’élève est tenu d’assister à  toutes les séances, de passer toutes les épreuves d’évaluation : contrôle continu, TP, test, examen, etc.  - L'élève doit assister à tout nouveau module introduit dans le programme.
+- externes  - Voies d'admission multiples  - Syllabus et matrices croisées mis en place  - Plates-formes technologiques de développement et d'innovation (pour les TIC)  - Cadre de vie des élèves  - Exigence du niveau B2 attesté en français et en anglais pour obtenir le diplôme  - Mixité des recrutements  - Formations à l'entreprenariat  - Méthodes pédagogiques innovantes
+
+"
+How many hours is the Java Programming course?,0.043326377868652344,False,1.0,"Based on your query 'How many hours is the Java Programming course?', here is the relevant information:
+
+- === 5ÈME ANNÉE === Semestre 1: - Développement durable (30H) - Compétences personnelles (30H) - Modules optionnels (141H) - Stage ingénieur (30H)  Semestre 2: - Projet de Fin d'Études PFE (99H)  DURÉE TOTALE: 5 ans (BAC+5) ou 3 ans (après licence) SYSTÈME: ECTS (60 crédits/an)
+- === 2ÈME ANNÉE (Classe 2A) === Semestre 1: - Web Technology project (42H) - Microcontroller Architecture (42H) - Communication Networks (42H) - Database (42H) - Fundamentals of Math 3 (84H) - Communication, Culture and citizenship A2 (42H)  Semestre 2: - Object-oriented Modeling and programming (OOP C++: 42H) - C++ Project (42H) - Network fundamentals (42H) - Systems and Scripting (21H) - Fundamentals of Math 4 (84H) - Communication, culture and citizenship F2 (42H)
+- === 3ÈME ANNÉE (Classe 3A - Licenciés en informatique) === Semestre 1: - UML (42H) - Java Programming (42H) - Estimation Techniques (42H) - English For Engineers (42H) - Unix Administration (42H) - IP network and Routing (42H) - Business Management (42H) - Web Technologies 2.0 (21H)  Semestre 2: - Software Engineering (42H) - Database Management System (42H) - Mobile Development (21H) - Integrated Development Project (42H) - Numerical Methods (63H) - Language Theory (42H) - IP Routing (21H)
+
+"
+What happens in the 5th year?,0.03422236442565918,False,0.0,"Based on your query 'What happens in the 5th year?', here is the relevant information:
+
+- Article 5 : Organisation des études    La durée totale de la formation est de 4 ans ; elle se déroule dans le cadre d’une convention de formation par  alternance entre l’école et l’entreprise selon un planning établi au début de chaque année universitaire : Les  séquences de la formation par année sont fixées par les responsables de la formation des deux organismes  ESPRIT et l’ENTREPRISE. Le calendrier annuel, les emplois du temps, le régime des examens et les stages ainsi
+- la formulation des résultats d’apprentissage constitue la base de l’évaluation de la charge de travail, et par  conséquent de l’adéquation des crédits. Les crédits ECTS sont attribués à des programmes d’études ainsi qu’à leurs  différentes composantes pédagogiques désignées par les UE (par exemple  cours, mémoires, stages, travaux en  laboratoire, etc.).  45 crédits ECTS correspondent à la charge de travail d’une année  académique à plein temps dans le cadre d u
+- Semestre 2: - Programming 2 (Procedural Programming 2: 52.5H, Algorithmic 2: 21H) - Fundamentals of Math 2 (84H) - Electronics (42H) - Project 1A (42H) - Graphic Design of games (21H) - Workshop Arduino (10.5H) - Communication, Culture and Citizenship A1 (42H)
+
+"
+What is the total duration of the engineering cycle?,0.03211045265197754,False,1.0,"Based on your query 'What is the total duration of the engineering cycle?', here is the relevant information:
+
+- === 5ÈME ANNÉE === Semestre 1: - Développement durable (30H) - Compétences personnelles (30H) - Modules optionnels (141H) - Stage ingénieur (30H)  Semestre 2: - Projet de Fin d'Études PFE (99H)  DURÉE TOTALE: 5 ans (BAC+5) ou 3 ans (après licence) SYSTÈME: ECTS (60 crédits/an)
+- d’accès aux cycles de formation d’ingénieurs (prépas MP, PC  ou Techno). Le flux annuel  projeté pour cette filière est de 150. Cette filière se scinde également en deux parcours à  partir de la 4 ème  année, un parcours « informatique » et un parcours
+- pour l’ensemble des quatre spécialités  - La filière B est un cursus de 3 années d ’études, destinée aux titulaires d ’une licence  scientifique et/ou technique, ou d ’une admission aux concours nationaux d’accès aux  cycles de formation d ’ingénieurs (prépas MP , PC ou Techno). Cette filière propose à  ses étudiants plusieurs options à partir de la 4ème année  - La filière C est un cursus de 4 années d ’études en cours du soir (form ation continue)
+
+"

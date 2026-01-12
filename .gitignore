@@ -4,9 +4,7 @@ __pycache__/
 .env
 
 .pytest_cache/
-.dvc/config.local
-.dvc/tmp
-.dvc/cache
+
 
 data
 models

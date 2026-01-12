@@ -1,5 +1,8 @@
 FROM python:3.9-slim
 
+ENV CUDA_VISIBLE_DEVICES=""
+ENV NVIDIA_VISIBLE_DEVICES=none
+
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y build-essential

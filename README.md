@@ -19,7 +19,12 @@ The application can be run in **development mode** (local embedding generation) 
 - React
 
 ---
+## Prerequisites & API Keys
 
+To enable the "Chat" capabilities (Generation), you need a **Hugging Face Access Token**.
+
+1. **Get a Token:** Sign up at [Hugging Face](https://huggingface.co/settings/tokens) and generate a `read` token.
+2. **Configuration:** You will pass this token as an environment variable (`HUGGINGFACEHUB_API_TOKEN`) when running the app.
 ## Repository Setup
 
 ```bash
@@ -35,6 +40,12 @@ dvc pull
 Raw documents used to build embeddings are located in `/data/raw`
 ## Development Mode
 Development mode allows local generation of vector embeddings from raw documents
+## configure secrets
+Create a `.env` file in the `backend/` directory:
+```toml
+HUGGINGFACEHUB_API_TOKEN=hf_YourActualTokenHere
+DATA_PATH=/app/backend/data
+```
 ### build the app
 ```bash
 docker compose up --build -d
@@ -60,6 +71,8 @@ you can use the prebuilt docker images that already include the embedding model 
        image: jbuguy/university-chatbot-backend:latest
        ports:
          - "8000:8000"
+       environment:
+         - HUGGINGFACEHUB_API_TOKEN=hf_YourTokenHere
      frontend:
        image: jbuguy/university-chatbot-frontend:latest
        ports:

@@ -2,16 +2,21 @@ services:
   backend:
     build: ./backend
     container_name: chatbot-backend
+    env_file:
+      - ./backend/.env
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/app  
-      - faiss_data:/app/data
-      - ./backend/data/raw:/app/data/raw 
+      - ./backend:/app
+      
+      - ./backend/data:/app/backend/data
+      
       - ./gcp-credentials.json:/app/gcp-credentials.json:ro
     environment:
       - ENV=development
-      - GOOGLE_APPLICATION_CREDNTIALS =/app/gcp-credentials.json
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-credentials.json
+      - DATA_PATH=/app/backend/data
+
   frontend:
     build: ./frontend
     container_name: chatbot-frontend
@@ -20,6 +25,5 @@ services:
     depends_on:
       - backend
     environment:
-      - REACT_APP_API_URL=http://localhost:8000 
-volumes:
-  faiss_data: 
+      - VITE_API_URL=http://localhost:8000
+      - CHOKIDAR_USEPOLLING=true 

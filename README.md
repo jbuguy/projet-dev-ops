@@ -50,8 +50,8 @@ you can use the prebuilt docker images that already include the embedding model 
 ### images
 | service | image name |
 |---------|------------|
-|Backend | jbuguy/university-chatbot-backend:latest|
-|frontend| jbuguy/university-chatbot-frontend:latest|
+|Backend | wassimnefzi/university-chatbot-backend:latest|
+|frontend| wassimnefzi/university-chatbot-frontend:latest|
 1. create a file named `docker-compose.prod.yml`:
    ```yaml
    version: '3.8'

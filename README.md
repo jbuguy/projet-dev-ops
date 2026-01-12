@@ -11,7 +11,7 @@ The application can be run in **development mode** (local embedding generation) 
 
 - Python 3.10
 - FastAPI
-- PyTorch (CPU)
+- PyTorch
 - Vector embeddings
 - Docker & Docker Compose
 - DVC (Google Drive remote)

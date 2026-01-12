@@ -11,5 +11,6 @@ langchain-community
 pypdf
 langchain-text-splitters
 pytest-mock
+mlflow
 langchain-huggingface
 huggingface_hub

@@ -2,6 +2,7 @@ import sys
 from unittest.mock import MagicMock
 import pytest
 
+
 mlflow_mock = MagicMock()
 sys.modules["mlflow"] = mlflow_mock
 
@@ -10,6 +11,9 @@ from app.core.rag import rag_service
 
 @pytest.fixture
 def client():
+    """
+    Creates a TestClient where the RAG service is forced to be 'Ready'.
+    """
     from fastapi.testclient import TestClient
     rag_service.is_ready = True
     rag_service.search = MagicMock(return_value=[

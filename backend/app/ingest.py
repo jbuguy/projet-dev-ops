@@ -86,8 +86,8 @@ def main():
         CHUNK_OVERLAP = 50
         
         # CRITICAL: This MUST match the model used in rag_service.py
-        # We selected the multilingual model for better performance.
-        EMBEDDING_MODEL = 'paraphrase-multilingual-mpnet-base-v2'
+        # Using the fast, efficient MiniLM model (80MB vs 500MB for multilingual)
+        EMBEDDING_MODEL = 'all-MiniLM-L6-v2'
         
         mlflow.log_param("chunk_size", CHUNK_SIZE)
         mlflow.log_param("chunk_overlap", CHUNK_OVERLAP)

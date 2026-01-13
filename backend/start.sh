@@ -1,4 +1,4 @@
 #!/bin/bash
 
 echo "Starting API..."
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+python -u -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --log-level info

@@ -2,102 +2,111 @@ import os
 import pickle
 import numpy as np
 import faiss
+import time
+
 from sentence_transformers import SentenceTransformer
-from langchain_huggingface import HuggingFaceEndpoint
-from langchain_core.prompts import PromptTemplate
+from huggingface_hub import InferenceClient
 
 DATA_PATH = os.getenv("DATA_PATH", "/app/data")
 ARTIFACTS_DIR = os.path.join(DATA_PATH, "artifacts")
 
-# Configuration for the LLM (From main branch)
-REPO_ID = "HuggingFaceH4/zephyr-7b-beta"
-HF_TOKEN = os.getenv("HUGGINGFACEHUB_API_TOKEN")
+# LLM Configuration
+LLM_MODEL = "meta-llama/Llama-3.1-8B-Instruct:novita"
+HF_TOKEN = os.getenv("HF_TOKEN")
+
 
 class RAGService:
     def __init__(self):
         self.index = None
         self.chunks = None
         self.bm25 = None
-        self.model = None  # The Embedding Model (Search)
-        self.llm = None    # The Generation Model (Chat)
+        self.model = None       # Embedding model
+        self.llm = None         # InferenceClient
         self.is_ready = False
 
     def load_artifacts(self):
-        """Loads the FAISS index, Metadata, BM25, and initializes the LLM."""
-        print(f"[INFO] Loading RAG Artifacts from {ARTIFACTS_DIR}...")
+        """Loads FAISS index, metadata, BM25, embedding model, and LLM client."""
+        print(f"[INFO] Loading RAG artifacts from {ARTIFACTS_DIR}...")
+        start_total = time.time()
+
         try:
-            # 1. Load Embedding Model
-            # Using 'paraphrase-multilingual' from main (better for mixed languages)
-            self.model = SentenceTransformer('paraphrase-multilingual-mpnet-base-v2')
-            
-            # 2. Load FAISS Index
+            # 1. Load embedding model
+            start = time.time()
+            print("[INFO] Loading embedding model...")
+            self.model = SentenceTransformer("all-MiniLM-L6-v2")
+            print(f"[INFO] ✓ Embedding model loaded in {time.time() - start:.2f}s")
+
+            # 2. Load FAISS index
+            start = time.time()
             index_path = os.path.join(ARTIFACTS_DIR, "vector_index.faiss")
             if not os.path.exists(index_path):
-                raise FileNotFoundError(f"Index not found at {index_path}")
+                raise FileNotFoundError(f"FAISS index not found at {index_path}")
             self.index = faiss.read_index(index_path)
+            print(f"[INFO] ✓ FAISS index loaded in {time.time() - start:.2f}s")
 
-            # 3. Load Metadata (Chunks)
-            with open(os.path.join(ARTIFACTS_DIR, "metadata.pkl"), "rb") as f:
+            # 3. Load metadata (chunks)
+            start = time.time()
+            metadata_path = os.path.join(ARTIFACTS_DIR, "metadata.pkl")
+            with open(metadata_path, "rb") as f:
                 self.chunks = pickle.load(f)
+            print(f"[INFO] ✓ Metadata loaded in {time.time() - start:.2f}s")
 
-            # 4. Load BM25 (From yassinenew - keeps compatibility for hybrid search)
+            # 4. Load BM25 (optional, hybrid search support)
+            start = time.time()
             bm25_path = os.path.join(ARTIFACTS_DIR, "bm25.pkl")
             if os.path.exists(bm25_path):
                 with open(bm25_path, "rb") as f:
                     self.bm25 = pickle.load(f)
+                print(f"[INFO] ✓ BM25 loaded in {time.time() - start:.2f}s")
 
-            # 5. Initialize the LLM (Hugging Face API from main)
+            # 5. Initialize Hugging Face Inference Client
             if HF_TOKEN:
-                print("[INFO] Connecting to Hugging Face API...")
-                self.llm = HuggingFaceEndpoint(
-                    repo_id=REPO_ID,
-                    task="text-generation",
-                    max_new_tokens=512,
-                    top_k=30,
-                    temperature=0.1,  # Keep it factual
-                    huggingfacehub_api_token=HF_TOKEN
-                )
+                start = time.time()
+                print("[INFO] Initializing Hugging Face InferenceClient...")
+                self.llm = InferenceClient(api_key=HF_TOKEN)
+                print(f"[INFO] ✓ InferenceClient ready in {time.time() - start:.2f}s")
             else:
-                print("[WARNING] No HUGGINGFACEHUB_API_TOKEN found. Using simple fallback mode.")
+                print("[WARNING] HF_TOKEN not set. Running in retrieval-only mode.")
                 self.llm = None
 
             self.is_ready = True
-            print("[SUCCESS] RAG Service Loaded and Ready.")
+            print(f"[SUCCESS] RAG Service ready in {time.time() - start_total:.2f}s")
+
         except Exception as e:
-            print(f"[ERROR] Failed to load artifacts: {e}")
+            print(f"[ERROR] Failed to load RAG artifacts: {e}")
             self.is_ready = False
 
     def _contextualize_query(self, query: str, history: list) -> str:
         """
-        Rewrites the query to include context from history.
-        (Feature from yassinenew)
+        Rewrites the query using conversation history (last user message).
         """
         if not history:
             return query
 
-        # Get the last message sent by the user
-        last_user_msg = next((m['content'] for m in reversed(history) if m['role'] == 'user'), None)
+        last_user_msg = next(
+            (m["content"] for m in reversed(history) if m["role"] == "user"),
+            None,
+        )
 
         if last_user_msg:
-            print(f"[DEBUG] Rewriting query with context: {last_user_msg[:50]}...")
+            print("[DEBUG] Contextualizing query...")
             return f"{last_user_msg} {query}"
 
         return query
 
     def search(self, query: str, history: list = [], k: int = 3):
         """
-        Retrieves top K chunks using Vector Search (Dense).
+        Dense vector search using FAISS.
         """
         if not self.is_ready:
             return [], query
 
-        # 1. Rewrite Query for Context (Using logic from yassinenew)
         contextual_query = self._contextualize_query(query, history)
 
-        # 2. Vector Search using the rewritten query
         query_vector = self.model.encode([contextual_query])
         distances, indices = self.index.search(
-            np.array(query_vector).astype('float32'), k)
+            np.array(query_vector).astype("float32"), k
+        )
 
         results = []
         for idx in indices[0]:
@@ -108,64 +117,75 @@ class RAGService:
 
     def generate_answer(self, query: str, retrieved_chunks: list):
         """
-        Synthesizes a readable answer using Zephyr-7B (from main).
+        Generate answer using Llama-3.1-8B-Instruct via HF Inference API.
         """
         if not retrieved_chunks:
             return {
                 "answer": "I'm sorry, I couldn't find any information about that in the official documents.",
-                "sources": []
+                "sources": [],
             }
 
-        # 1. Prepare Context & Sources
-        sources_list = []
+        # Prepare context and sources
         context_text = ""
+        sources = set()
+
         for chunk in retrieved_chunks:
-            source_name = chunk['metadata']['source']
-            page_num = chunk['metadata'].get('page', 'N/A')
-            text = chunk['text'].replace("\n", " ").strip()
+            text = chunk["text"].replace("\n", " ").strip()
+            source = chunk["metadata"]["source"]
+            page = chunk["metadata"].get("page", "N/A")
 
             context_text += f"- {text}\n"
-            sources_list.append(f"{source_name} (Page {page_num})")
+            sources.add(f"{source} (Page {page})")
 
-        sources_list = list(set(sources_list))
-
-        # 2. Generate Answer (LLM vs Simple Fallback)
         if self.llm:
             try:
-                # The Prompt Template
-                template = """
-                You are a helpful university assistant. Answer the question based ONLY on the context provided below.
-                If the answer is not in the context, say "I don't know based on the documents."
-                
-                Context:
-                {context}
-                
-                Question:
-                {question}
-                
-                Answer:
-                """
-                prompt = PromptTemplate(template=template, input_variables=["context", "question"])
-                
-                # Create chain and invoke
-                chain = prompt | self.llm
-                answer = chain.invoke({"context": context_text, "question": query})
-                
-                # Cleanup: Sometimes models leave trailing text
-                answer = answer.strip()
+                messages = [
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a helpful university assistant. "
+                            "Answer ONLY using the provided context. "
+                            "If the answer is not present, say: "
+                            "'I don't know based on the documents.'"
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": f"""
+Context:
+{context_text}
+
+Question:
+{query}
+""",
+                    },
+                ]
+
+                completion = self.llm.chat.completions.create(
+                    model=LLM_MODEL,
+                    messages=messages,
+                    max_tokens=512,
+                    temperature=0.1,
+                )
+
+                answer = completion.choices[0].message.content.strip()
+
             except Exception as e:
-                print(f"[ERROR] LLM Generation failed: {e}")
-                answer = "I found relevant documents, but I couldn't generate a summary right now. Please check the sources below."
+                print(f"[ERROR] LLM generation failed: {e}")
+                answer = (
+                    "I found relevant documents, but I couldn't generate a summary right now."
+                )
         else:
-            # Fallback (Simple Template if no API Key)
             answer = (
-                f"Based on your query '{query}', here is the relevant text from the documents:\n\n"
-                f"{context_text}\n"
+                f"Based on your query '{query}', here are the relevant excerpts:\n\n"
+                f"{context_text}"
             )
 
         return {
             "answer": answer,
-            "sources": sources_list
+            "sources": list(sources),
         }
 
+
+# Singleton instance
 rag_service = RAGService()
